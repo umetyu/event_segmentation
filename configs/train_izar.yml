@@ -1,0 +1,49 @@
+experiment: Default
+
+data:
+    path: /home/umetsu/projects/event_segmentation/dataset/train/h5/
+    mode: events
+    window: 200000
+    window_loss: 200000
+
+model:
+    name: EVFlowNet_Segmentation
+    encoding: voxel
+    round_encoding: False
+    norm_input: False
+    num_bins: 5
+    base_num_channels: 32
+    kernel_size: 3
+    activations: [relu, Null]
+    mask_output: True
+
+spiking_neuron: Null
+
+loss:
+    flow_regul_weight: 0.001
+    clip_grad: 100.0
+    overwrite_intermediate: False
+
+optimizer:
+    name: Adam
+    lr: 0.00001
+
+loader:
+    n_epochs: 5000
+    batch_size: 8
+    resolution: [480, 640]
+    augment: ["Horizontal", "Vertical", "Polarity"]
+    augment_prob: [0.5, 0.5, 0.5]
+    gpu: 0
+
+vis:
+    verbose: True
+    enabled: False
+    px: 400
+    store_grads: False
+
+hot_filter:
+    enabled: False
+    max_px: 100
+    min_obvs: 5
+    max_rate: 0.8
