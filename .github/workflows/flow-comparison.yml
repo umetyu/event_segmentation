@@ -1,0 +1,54 @@
+name: Flow comparison preflight
+
+on:
+  push:
+    branches: [main, codex/izar-flow-comparison]
+    paths:
+      - benchmarks/flow_comparison/**
+      - .github/workflows/flow-comparison.yml
+  pull_request:
+    paths:
+      - benchmarks/flow_comparison/**
+      - .github/workflows/flow-comparison.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-preflight-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  cpu-model-check:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: benchmarks/flow_comparison
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --only-binary=:all: 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --only-binary=:all: 'numpy==1.26.4'
+          python -m pip check
+      - name: Validate scripts and fetch pinned model definitions
+        run: |
+          bash -n cluster/setup_izar.sh cluster/model_preflight.sbatch
+          python -m py_compile scripts/fetch_sources.py scripts/model_preflight.py
+          python scripts/fetch_sources.py
+      - name: Check parameter matching and synthetic gradients
+        run: python scripts/model_preflight.py --device cpu --output results/cpu-preflight.json
+      - name: Upload synthetic verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-comparison-cpu-preflight
+          path: benchmarks/flow_comparison/results/cpu-preflight.json
+          if-no-files-found: warn
