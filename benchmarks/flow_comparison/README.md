@@ -52,6 +52,7 @@ python scripts/model_preflight.py --device cpu --output results/cpu-preflight.js
 既存のIzar用スクリプトと同じ`gcc/11.3.0`、`python/3.10.4`を使い、
 Python標準の`python -m venv`で専用環境を作り、PyTorch `2.5.1+cu121`とNumPy `1.26.4`をインストールします。
 Izarにない`py-virtualenv`モジュールや、外部の`virtualenv`コマンドは必要ありません。
+環境作成直後にpipを`25.0.1`に揃え、古いpipによる依存パッケージ名の解釈エラーを避けます。
 システムのCUDA Toolkitやドライバの変更は行いません。
 
 Izar上で、このリポジトリのルートから実行します。

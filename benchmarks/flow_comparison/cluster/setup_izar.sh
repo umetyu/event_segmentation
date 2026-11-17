@@ -23,6 +23,8 @@ elif [[ ! -f "$venv_dir/pyvenv.cfg" || ! -x "$venv_dir/bin/python" ]]; then
     exit 2
 fi
 
+# Older venv-seeded pip versions reject normalized names in the PyTorch index.
+"$venv_dir/bin/python" -m pip install --no-cache-dir --only-binary=:all: --upgrade 'pip==25.0.1'
 "$venv_dir/bin/python" -m pip install --no-cache-dir --only-binary=:all: 'torch==2.5.1+cu121' --index-url https://download.pytorch.org/whl/cu121
 "$venv_dir/bin/python" -m pip install --no-cache-dir --only-binary=:all: 'numpy==1.26.4'
 "$venv_dir/bin/python" -m pip check
