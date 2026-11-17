@@ -58,7 +58,8 @@ def main():
     report = {"purpose": "synthetic_training_resume_check_only", "models": []}
     with tempfile.TemporaryDirectory(prefix="training-smoke-") as tmp:
         root = Path(tmp)
-        manifest = synthetic_manifest(root)
+        (root / "data").mkdir()
+        manifest = synthetic_manifest(root / "data")
         for kind in ("segmentation", "snn"):
             common = [
                 sys.executable,
@@ -71,18 +72,18 @@ def main():
                 "cpu",
             ]
             for directory, steps, resume in (("continuous", 4, False), ("resumed", 2, False), ("resumed", 4, True)):
-                output = root / kind / directory
+                output = root / "continuous" / kind if directory == "continuous" else root / kind
                 subprocess.run(
                     common + ["--output", str(output), "--until", str(steps)] + (["--resume"] if resume else []),
                     check=True,
                 )
-            continuous = torch.load(root / kind / "continuous/last.pt", map_location="cpu", weights_only=True)
-            resumed = torch.load(root / kind / "resumed/last.pt", map_location="cpu", weights_only=True)
+            continuous = torch.load(root / "continuous" / kind / "last.pt", map_location="cpu", weights_only=True)
+            resumed = torch.load(root / kind / "last.pt", map_location="cpu", weights_only=True)
             for key in continuous["model"]:
                 torch.testing.assert_close(continuous["model"][key], resumed["model"][key], rtol=0, atol=0)
             if continuous["history"] != resumed["history"]:
                 raise ValueError("Resume changed losses or sample order")
-            summary = json.loads((root / kind / "resumed/summary.json").read_text())
+            summary = json.loads((root / kind / "summary.json").read_text())
             report["models"].append(
                 {
                     "model": kind,
@@ -93,6 +94,38 @@ def main():
                 }
             )
             del continuous, resumed
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/diagnose_short_run.py"),
+                "--run",
+                str(root),
+                "--output",
+                str(root / "diagnostics"),
+                "--device",
+                "cpu",
+                "--warmup",
+                "1",
+                "--repeats",
+                "2",
+            ],
+            check=True,
+        )
+        diagnostics = json.loads((root / "diagnostics/summary.json").read_text())
+        if diagnostics["status"] != "short_run_diagnostics_completed" or diagnostics["test_evaluated"]:
+            raise ValueError("Unexpected diagnostic status")
+        for result in diagnostics["models"]:
+            saved = json.loads((root / result["model"] / "summary.json").read_text())
+            np.testing.assert_allclose(
+                result["metrics"]["epe_px"],
+                saved["final_validation"]["pixel_weighted_metrics"]["epe_px"],
+                rtol=1e-6,
+                atol=1e-6,
+            )
+            np.testing.assert_allclose(result["zero_metrics"]["epe_px"], 4.0)
+            if result["model_latency"]["iterations"] != 2:
+                raise ValueError("Missing timed inference repetitions")
+        report["saved_checkpoint_diagnostics_passed"] = True
     report["status"] = "passed"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
