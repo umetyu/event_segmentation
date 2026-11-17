@@ -12,11 +12,16 @@ module load gcc/11.3.0 python/3.10.4
 set -u
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-venv_dir="${EVENT_FLOW_VENV:-/scratch/$(id -un)/event-flow-benchmark/venv-torch251-cu121}"
+# Scratch paths are site/account-specific; use the user's persistent home by default.
+venv_dir="${EVENT_FLOW_VENV:-$HOME/venvs/event-flow-torch251-cu121}"
+printf 'Experiment environment: %s\n' "$venv_dir"
 python -c 'import sys; assert (3, 9) <= sys.version_info[:2] <= (3, 12), sys.version; print(sys.version)'
 
 if [[ ! -e "$venv_dir" ]]; then
-    mkdir -p "$(dirname -- "$venv_dir")"
+    if ! mkdir -p "$(dirname -- "$venv_dir")"; then
+        echo 'Cannot create the environment parent directory. Set EVENT_FLOW_VENV to a writable absolute path.' >&2
+        exit 2
+    fi
     python -m venv "$venv_dir"
 elif [[ ! -f "$venv_dir/pyvenv.cfg" || ! -x "$venv_dir/bin/python" ]]; then
     echo "Existing path is not a valid virtualenv: $venv_dir" >&2
