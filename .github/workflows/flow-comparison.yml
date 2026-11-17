@@ -54,6 +54,8 @@ jobs:
         run: python scripts/model_preflight.py --device cpu --output results/cpu-preflight.json
       - name: Verify training, exact CPU resume and saved-checkpoint diagnostics
         run: python scripts/training_smoke.py --output results/training-smoke.json
+      - name: Verify small-sample monitoring and training without monitor GT files
+        run: python scripts/fit_probe_smoke.py --output results/fit-probe-smoke.json
       - name: Upload synthetic verification report
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,4 +64,5 @@ jobs:
           path: |
             benchmarks/flow_comparison/results/cpu-preflight.json
             benchmarks/flow_comparison/results/training-smoke.json
+            benchmarks/flow_comparison/results/fit-probe-smoke.json
           if-no-files-found: warn
