@@ -56,6 +56,8 @@ jobs:
         run: python scripts/training_smoke.py --output results/training-smoke.json
       - name: Verify small-sample monitoring and training without monitor GT files
         run: python scripts/fit_probe_smoke.py --output results/fit-probe-smoke.json
+      - name: Verify supervised control, resume and validation-label isolation
+        run: python scripts/gt_control_smoke.py --output results/gt-control-smoke.json
       - name: Upload synthetic verification report
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,4 +67,5 @@ jobs:
             benchmarks/flow_comparison/results/cpu-preflight.json
             benchmarks/flow_comparison/results/training-smoke.json
             benchmarks/flow_comparison/results/fit-probe-smoke.json
+            benchmarks/flow_comparison/results/gt-control-smoke.json
           if-no-files-found: warn

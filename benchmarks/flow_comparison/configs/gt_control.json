@@ -1,0 +1,6 @@
+{
+  "protocol": "supervised_fit_control_v1",
+  "updates": 200,
+  "monitor_every": 20,
+  "epe_epsilon_px": 0.001
+}
