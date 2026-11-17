@@ -2,7 +2,7 @@
 
 ## Optical-flow comparison on Izar
 
-The [flow-comparison preflight](benchmarks/flow_comparison/README.md) adds parameter-matched EV-LayerSegNet and SNN configurations, a GitHub Actions CPU check, and an Izar GPU job. DSEC training/evaluation and the optimization baseline are not implemented by this preflight.
+The [flow-comparison preflight](benchmarks/flow_comparison/README.md) adds parameter-matched EV-LayerSegNet and SNN configurations, GitHub Actions CPU checks, and Izar GPU jobs. It validates original DSEC timestamps, rectification, GT masks and real-event model inputs. DSEC training, trained-model accuracy/latency comparison and the optimization baseline are not implemented by this preflight.
 
 Repository inspired from [event_flow](https://github.com/tudelft/event_flow)
 

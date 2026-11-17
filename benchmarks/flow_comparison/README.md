@@ -1,8 +1,9 @@
 # 光フロー比較の準備：EV-LayerSegNet / SNN / optimization
 
 DSEC-Flowで3手法の精度・速度を比較するための、モデルサイズ調整と動作確認用コードです。
-現在は2つのニューラルネットワークのパラメータ計数・合成入力での前向き/逆向き計算まで実装しています。
-**DSECの学習、精度・速度評価、optimizationの実装はまだ含みません。**
+2つのニューラルネットワークのパラメータ計数・合成入力での前向き/逆向き計算に加え、
+DSECの読み込み・GTマスク・時刻合わせ・実イベント入力の確認を実装しています。
+**DSECでの学習、学習済みモデルの精度・速度比較、optimizationの実装はまだ含みません。**
 
 ## モデルサイズ
 
@@ -35,6 +36,9 @@ segmentationでは、アフィンフロー分岐の最初の2畳み込みを
 4. 調整後のモデルを64×80の合成入力で動かし、出力形状、有限な勾配、
    全学習パラメータから損失への接続を確認。
 5. JSONレポートをActionsのartifactとして保存。
+
+小さな人工データでDSECのRGB/BGR順序、時刻オフセット、半開区間、空区間、
+座標補正・補間、GTマスク、評価指標を確認するテストも実行します。
 
 SNNのチェックは内部状態を使う経路の確認のため2ステップ、segmentationは1ステップです。
 これは実装の動作確認であり、公平な速度測定や精度評価ではありません。
@@ -86,6 +90,71 @@ cat benchmarks/flow_comparison/results/model-preflight-<JOB_ID>.json
 GPUの型番、VRAM、CUDA runtime、合成入力のピークメモリはJSONに記録します。
 このピークメモリをDSECの640×480入力や長いBPTT系列の必要メモリとして扱わないでください。
 GitHub ActionsからIzarへログインする処理や、SSH認証情報の登録は含みません。
+
+## 次の段階：既存DSECデータで確認
+
+Izar上のリポジトリのルートで実行します。以下は今回の既存データ保存先です。
+データのダウンロード・変換・上書きは行いません。
+
+```bash
+git pull --ff-only
+bash benchmarks/flow_comparison/cluster/submit_dsec_preflight.sh \
+  /home/umetsu/projects/event_segmentation/dataset/dsec_flow_matched
+```
+
+専用venvにデータ読み込み用の依存パッケージを追加し、Slurmジョブを投入します。
+ジョブIDを表示後、終了まで待ってJSONを表示します。失敗時も診断情報を保存します。
+結果は`benchmarks/flow_comparison/results/dsec-preflight-<JOB_ID>.json`と同名の`.log`です。
+対象シーケンスを指定する場合は保存先の後にシーケンス名を追加してください。
+指定しない場合は、見つかったGT付きシーケンスの辞書順で最初のものを検査します。
+
+確認内容：
+
+- 元のDSECの整数マイクロ秒時刻に`t_offset`を加え、各GTの開始・終了時刻に一致する
+  `[start, end)`のイベントだけを選択。固定100 msやファイル番号から時刻を推定しません。
+- 左カメラの`rectify_map[y, x]`で補正し、画面外になるイベント数を記録。
+- 16-bit PNGをRGB順に戻し、`(value - 32768) / 128`で前向きの画素変位に変換。
+  第3チャンネルの有効マスクをそのまま使い、**有効なゼロフローも評価対象に残します**。
+- シーケンスの先頭・中間・末尾の最大3区間を検査。GT自身とのEPEが0であることを確認し、
+  ゼロフロー予測のEPE・1/2/3-pixel error（厳密な`> N`、百分率）を参考値として記録。
+  指標は各サンプル内の有効画素平均で、DSEC公式ランキングの集計結果ではありません。
+- 両NNは同じ区間の全イベントを使用。segmentationは5-bin signed voxel、
+  SNNはその区間を5等分した正負2チャンネルのカウント列を使用します。
+  空間方向は双線形補間、voxelの時間方向は線形補間。正規化・GTによる入力マスクは使いません。
+- 最初の区間を元解像度480×640、batch=1で両NNに入力し、有限な出力と形状を確認。
+  SNN状態は区間開始時にresetし、5ステップを実行します。
+  **重みはランダム初期値で、学習・速度計測・モデル精度評価は行いません。**
+
+対応する元データの配置例：
+
+```text
+<root>/[train/]<sequence>/
+  events/left/events.h5
+  events/left/rectify_map.h5
+  flow/forward/*.png
+  flow/forward_timestamps.txt
+```
+
+`events_left/`またはシーケンス直下の`events.h5`と、
+`optical_flow_forward/`または`optical_flow_forward_event/`に分けた配置も対応します。
+時刻ファイルは`flow/forward_timestamps.txt`、フローPNGディレクトリ内の`timestamps.txt`、
+またはシーケンス直下の`[<sequence>_]optical_flow_forward_timestamps.txt`を認識します。
+PNG数と時刻行数の不一致、GTの欠損、未知の変換済み形式では評価せず停止します。
+
+既存の`data/dsec_to_h5.py`と`data/h5_packager.py`による変換では、
+GTの無効画素がゼロに置き換わり、元の有効マスクが保存されません。
+この形式の場合はHDF5構造をJSONに記録し、元PNGとマスクを保持した形式への対応が必要と報告します。
+元データなしにゼロ値からマスクを復元することはできません。
+
+CPUまたはデータだけの確認：
+
+```bash
+cd benchmarks/flow_comparison
+python -m pip install -r requirements-data.txt
+python -m unittest discover -s tests -v
+python scripts/dsec_preflight.py --root /path/to/DSEC --device none --output results/dsec-data.json
+# 同じチェックに両モデルのCPU推論を追加する場合は --device cpu
+```
 
 ## 今後共通化する実験条件
 
