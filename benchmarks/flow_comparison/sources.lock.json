@@ -1,0 +1,30 @@
+{
+  "segmentation": {
+    "repository": "Fulmen67/event_segmentation",
+    "commit": "a6e28dce82720f41c0e62781e01d015a8f3b2a26",
+    "files": {
+      "models/base.py": "6fe2dd62f1730fcbd51f6d29601e69ca56afc93b43e2ac2e82e200b9a5959a02",
+      "models/model.py": "36e5d345ff046753d5e5a87403156077a5ecf51878bdf2a35367b98f0f1d9607",
+      "models/model_util.py": "a131e8dae275446b7195b6d91b35f35d4f925ddad59595c9dd7a7d1405337c7d",
+      "models/submodules.py": "20f28d875af3ceae600c3b3787e0c0184cb47f797e3caec3a124ee4dcb962b9d",
+      "models/unet.py": "a463ed7977f0a035263b63a64bac35fc1f1b1de6c6d9d90429299051956f0504",
+      "utils/LeakyDoReLU.py": "5e59fc0e4f9406991f723ad78a7135dd713fa38d0f025fc8c7734429426e1f1e",
+      "models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "utils/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "snn": {
+    "repository": "tudelft/event_flow",
+    "commit": "e81f9630a145da8c7e57b2cfd38cf6c0b47ac14f",
+    "files": {
+      "models/base.py": "5b09d905a97ac9cec12f957fe510e1f8e0b28a72fe568a86909d71d8da969d8f",
+      "models/model.py": "a963e0b0826e41cc244887b58ef3ab0631019513c5d808f5259cd38d32b0e8e7",
+      "models/model_util.py": "a131e8dae275446b7195b6d91b35f35d4f925ddad59595c9dd7a7d1405337c7d",
+      "models/spiking_submodules.py": "61070a514260734b1301cc9eeb0e34d8cdbb6e6cb1a4ad95ccb9482148e5cc2a",
+      "models/spiking_util.py": "3898edc0ce701666f1f979831104d0264c74f4f84ed884cb644eca61b9f6b781",
+      "models/submodules.py": "61388f262f33f419dc176ccc89856b1665a97e0ffd6852e31020aba3dd6a5558",
+      "models/unet.py": "3cf4c9aa141ad5703b97e74ae310930cc103a278d38d2061040822c73571a7f0",
+      "models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

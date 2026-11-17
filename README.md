@@ -1,5 +1,9 @@
 # EV-LayerSegNet: Self-supervised Motion Segmentation using Event Cameras
 
+## Optical-flow comparison on Izar
+
+The [flow-comparison experiment](benchmarks/flow_comparison/README.md) adds parameter-matched EV-LayerSegNet and SNN configurations, DSEC input validation, and short self-supervised training with shared data/loss/update budgets and checkpoint resume. GitHub Actions checks CPU execution; Slurm scripts target Izar. Full trained-model accuracy/latency comparison and the optimization baseline are not implemented yet.
+
 Repository inspired from [event_flow](https://github.com/tudelft/event_flow)
 
 This work is featured in CVPR 2025 Event-based Vision Workshop: [here](https://openaccess.thecvf.com/content/CVPR2025W/EventVision/papers/Farah_EV-LayerSegNet_Self-supervised_Motion_Segmentation_using_Event_Cameras_CVPRW_2025_paper.pdf).

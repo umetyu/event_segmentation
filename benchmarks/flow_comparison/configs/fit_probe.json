@@ -1,0 +1,6 @@
+{
+  "protocol": "selfsup_fit_probe_v1",
+  "train_record_indices": [0, 1],
+  "updates": 200,
+  "monitor_every": 20
+}
