@@ -50,7 +50,8 @@ python scripts/model_preflight.py --device cpu --output results/cpu-preflight.js
 ## IzarでGPU確認を実行
 
 既存のIzar用スクリプトと同じ`gcc/11.3.0`、`python/3.10.4`を使い、
-専用virtualenvにはPyTorch `2.5.1+cu121`とNumPy `1.26.4`をインストールします。
+Python標準の`python -m venv`で専用環境を作り、PyTorch `2.5.1+cu121`とNumPy `1.26.4`をインストールします。
+Izarにない`py-virtualenv`モジュールや、外部の`virtualenv`コマンドは必要ありません。
 システムのCUDA Toolkitやドライバの変更は行いません。
 
 Izar上で、このリポジトリのルートから実行します。
@@ -58,6 +59,10 @@ Izar上で、このリポジトリのルートから実行します。
 ```bash
 bash benchmarks/flow_comparison/cluster/setup_izar.sh
 ```
+
+セットアップに失敗してコードを更新した場合は、取得済みリポジトリ内で
+`git pull --ff-only`を実行し、上記のセットアップを再実行してください。
+今回のモジュール読み込みエラーは環境作成前に停止するため、cloneや環境の削除は不要です。
 
 環境の既定の保存先は`/scratch/$USER/event-flow-benchmark/venv-torch251-cu121`です。
 必要なら`EVENT_FLOW_VENV`環境変数で変更できます。scratch上の環境は再作成可能です。

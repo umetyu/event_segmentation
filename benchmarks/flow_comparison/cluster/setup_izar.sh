@@ -8,7 +8,7 @@ if ! type module >/dev/null 2>&1; then
     exit 2
 fi
 module purge
-module load gcc/11.3.0 python/3.10.4 py-virtualenv
+module load gcc/11.3.0 python/3.10.4
 set -u
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,7 +17,7 @@ python -c 'import sys; assert (3, 9) <= sys.version_info[:2] <= (3, 12), sys.ver
 
 if [[ ! -e "$venv_dir" ]]; then
     mkdir -p "$(dirname -- "$venv_dir")"
-    virtualenv --no-download --no-setuptools --no-wheel "$venv_dir"
+    python -m venv "$venv_dir"
 elif [[ ! -f "$venv_dir/pyvenv.cfg" || ! -x "$venv_dir/bin/python" ]]; then
     echo "Existing path is not a valid virtualenv: $venv_dir" >&2
     exit 2

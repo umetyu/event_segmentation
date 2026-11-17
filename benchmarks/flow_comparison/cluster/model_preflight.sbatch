@@ -13,7 +13,7 @@
 
 set -eo pipefail
 module purge
-module load gcc/11.3.0 python/3.10.4 py-virtualenv
+module load gcc/11.3.0 python/3.10.4
 set -u
 : "${SLURM_JOB_ID:?Submit with sbatch}"
 : "${BENCHMARK_PYTHON:?Set BENCHMARK_PYTHON to the experiment virtualenv Python}"
