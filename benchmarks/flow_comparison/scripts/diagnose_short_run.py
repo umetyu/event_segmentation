@@ -196,6 +196,15 @@ def worker(args):
         "mean_warped_in_frame_fraction": float(
             np.mean([r["loss_components"]["warped_in_frame_fraction"] for r in rows])
         ),
+        "mean_prediction_magnitude_valid_px": sum(
+            r["prediction_valid_pixels"]["magnitude_mean_px"] * r["metrics"]["valid_pixels"] for r in rows
+        )
+        / metrics["valid_pixels"],
+        "mean_gt_magnitude_valid_px": sum(
+            r["gt_valid_pixels"]["magnitude_mean_px"] * r["metrics"]["valid_pixels"] for r in rows
+        )
+        / metrics["valid_pixels"],
+        "max_prediction_magnitude_all_px": max(r["prediction_all_pixels"]["magnitude_max_px"] for r in rows),
         "model_latency": latency_statistics([v for r in rows for v in r["model_latency"]["samples_ms"]]),
         "samples": rows,
         "device": args.device,
