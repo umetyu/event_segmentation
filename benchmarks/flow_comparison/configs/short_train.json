@@ -1,0 +1,20 @@
+{
+  "protocol": "selfsup_short_v1",
+  "seed": 7,
+  "crop_hw": [256, 256],
+  "voxel_bins": 5,
+  "snn_steps": 5,
+  "updates": 20,
+  "learning_rate": 0.00001,
+  "gradient_clip": 1.0,
+  "smoothness_weight": 0.001,
+  "boundary_weight": 0.1,
+  "loss_event_limit": 50000,
+  "train_windows_per_sequence": 4,
+  "validation_windows_per_sequence": 2,
+  "splits": {
+    "train": ["zurich_city_01_a", "zurich_city_02_a", "zurich_city_02_c", "zurich_city_02_d", "zurich_city_02_e"],
+    "validation": ["zurich_city_10_a", "zurich_city_10_b"],
+    "test": ["zurich_city_11_a", "zurich_city_11_b", "zurich_city_11_c"]
+  }
+}

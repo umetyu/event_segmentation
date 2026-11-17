@@ -52,10 +52,14 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Check parameter matching and synthetic gradients
         run: python scripts/model_preflight.py --device cpu --output results/cpu-preflight.json
+      - name: Train both models and verify exact CPU checkpoint resume
+        run: python scripts/training_smoke.py --output results/training-smoke.json
       - name: Upload synthetic verification report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flow-comparison-cpu-preflight
-          path: benchmarks/flow_comparison/results/cpu-preflight.json
+          path: |
+            benchmarks/flow_comparison/results/cpu-preflight.json
+            benchmarks/flow_comparison/results/training-smoke.json
           if-no-files-found: warn

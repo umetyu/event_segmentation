@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import cv2
 import h5py
@@ -63,6 +64,13 @@ class DsecTests(unittest.TestCase):
         np.testing.assert_equal(flow[1, 1], [0, 0])
         np.testing.assert_equal(flow[1, 2], [2.5, -0.5])
         self.assertFalse(valid[0, 0])
+
+    def test_selfsupervised_sample_does_not_read_gt_png(self):
+        with DsecSequence(self.paths()) as seq, patch("dsec_data.load_flow_png", side_effect=AssertionError("GT read")):
+            sample = seq.read_sample(0, include_gt=False)
+            self.assertNotIn("flow", sample)
+            self.assertNotIn("valid", sample)
+            self.assertEqual(representations(sample)["voxels"].shape, (5, 4, 4))
 
     def test_timestamp_offset_duplicate_boundaries_and_empty_window(self):
         with DsecSequence(self.paths()) as seq:

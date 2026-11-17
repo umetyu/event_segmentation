@@ -201,6 +201,9 @@ class DsecSequence:
         return events
 
     def __getitem__(self, index):
+        return self.read_sample(index, include_gt=True)
+
+    def read_sample(self, index, include_gt=False):
         start, end = (int(t) for t in self.timestamps[index])
         events = self.read_events(start, end)
         x, y, p = (events[k] for k in ("x", "y", "p"))
@@ -219,10 +222,7 @@ class DsecSequence:
             & (xy[:, 1] >= 0)
             & (xy[:, 1] <= self.height - 1)
         )
-        flow, valid = load_flow_png(self.flows[index])
-        if flow.shape[:2] != (self.height, self.width):
-            raise ValueError("GT and rectified event resolutions differ")
-        return {
+        sample = {
             "x": xy[keep, 0],
             "y": xy[keep, 1],
             "p": p[keep],
@@ -230,10 +230,15 @@ class DsecSequence:
             "start_us": start,
             "end_us": end,
             "raw_event_count": int(len(x)),
-            "flow": flow,
-            "valid": valid,
+            "resolution": (self.height, self.width),
             "flow_file": str(self.flows[index]),
         }
+        if include_gt:
+            flow, valid = load_flow_png(self.flows[index])
+            if flow.shape[:2] != (self.height, self.width):
+                raise ValueError("GT and rectified event resolutions differ")
+            sample.update(flow=flow, valid=valid)
+        return sample
 
 
 def representations(sample, bins=5, steps=5):
@@ -244,7 +249,7 @@ def representations(sample, bins=5, steps=5):
     """
     if bins < 2 or steps < 1:
         raise ValueError("Need at least two voxel bins and one SNN step")
-    h, w = sample["valid"].shape
+    h, w = sample["resolution"] if "resolution" in sample else sample["valid"].shape
     x, y, p = (sample[k] for k in ("x", "y", "p"))
     tau = (sample["t"] - sample["start_us"]).astype(np.float64) / (sample["end_us"] - sample["start_us"])
     if np.any((tau < 0) | (tau >= 1)):
