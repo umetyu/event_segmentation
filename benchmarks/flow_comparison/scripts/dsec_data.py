@@ -27,7 +27,28 @@ def first_file(paths):
     return next((p for p in paths if p.is_file()), None)
 
 
-def discover_sequences(root):
+def layout_summary(seq):
+    """Show bounded file-layout evidence, including PNG and timestamp locations."""
+    result = []
+    for directory, dirs, files in os.walk(seq):
+        dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+        if len(Path(directory).relative_to(seq).parts) >= 2:
+            dirs.clear()
+        names = sorted(files)
+        result.append(
+            {
+                "directory": str(Path(directory).relative_to(seq)),
+                "file_count": len(names),
+                "file_examples": names[:5],
+                "timestamp_files": [n for n in names if "timestamp" in n.lower()][:8],
+            }
+        )
+        if len(result) >= 12:
+            break
+    return result
+
+
+def discover_sequences(root, diagnostics=None):
     """Support the official combined archive and common per-sequence layouts."""
     root = Path(root).resolve()
     found = []
@@ -43,26 +64,49 @@ def discover_sequences(root):
             continue
         if event_dir.name == "left" and event_dir.parent.name == "events":
             seq = event_dir.parent.parent
-        elif event_dir.name.endswith("events_left"):
+        elif event_dir.name == "events" or event_dir.name.endswith("events_left"):
             seq = event_dir.parent
         else:
             seq = event_dir
         rectify = first_file([event_dir / "rectify_map.h5", event_dir / "rectify_maps.h5"])
-        flow_dirs = [seq / "flow/forward", seq / "optical_flow_forward", seq / "optical_flow_forward_event"]
-        flow_dirs.append(seq / f"{seq.name}_optical_flow_forward_event")
-        flow = next((p for p in flow_dirs if p.is_dir() and next(p.glob("*.png"), None)), None)
-        if flow is None or rectify is None:
-            continue
-        timestamps = first_file(
-            [
-                flow / "timestamps.txt",
-                seq / "flow/forward_timestamps.txt",
-                seq / "optical_flow_forward_timestamps.txt",
-                seq / f"{seq.name}_optical_flow_forward_timestamps.txt",
-            ]
-        )
-        if timestamps is not None:
-            found.append(SequencePaths(seq, event_dir / "events.h5", rectify, flow, timestamps))
+        flow_dirs = [
+            seq / "flow/forward",
+            seq / "optical_flow_forward",
+            seq / "optical_flow_forward_event",
+            seq / f"{seq.name}_optical_flow_forward_event",
+            seq / "flow",
+        ]
+        flow_found = False
+        matched = None
+        for flow in flow_dirs:
+            if not flow.is_dir() or next(flow.glob("*.png"), None) is None:
+                continue
+            flow_found = True
+            timestamps = first_file(
+                [
+                    flow / "timestamps.txt",
+                    seq / "flow/forward_timestamps.txt",
+                    seq / "optical_flow_forward_timestamps.txt",
+                    seq / f"{seq.name}_optical_flow_forward_timestamps.txt",
+                    seq / "flow_timestamps.txt",
+                    seq / "forward_timestamps.txt",
+                ]
+            )
+            if timestamps is not None and rectify is not None:
+                matched = SequencePaths(seq, event_dir / "events.h5", rectify, flow, timestamps)
+                found.append(matched)
+                break
+        if diagnostics is not None and len(diagnostics) < 4:
+            diagnostics.append(
+                {
+                    "sequence": str(seq),
+                    "events": str(event_dir / "events.h5"),
+                    "rectification_found": rectify is not None,
+                    "flow_png_directory_found": flow_found,
+                    "matched": matched is not None,
+                    "layout": layout_summary(seq),
+                }
+            )
     return sorted(found, key=lambda p: str(p.root))
 
 

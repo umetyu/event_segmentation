@@ -109,25 +109,36 @@ def check(args, report):
         raise FileNotFoundError(f"DSEC directory does not exist: {root}")
     report["root"] = str(root)
     report["inventory"] = inventory(root)
-    sequences = discover_sequences(root)
+    report["sequence_discovery"] = []
+    sequences = discover_sequences(root, diagnostics=report["sequence_discovery"])
     report["available_sequences"] = [str(p.root.relative_to(root)) or "." for p in sequences]
     if args.sequence:
         sequences = [
             p for p in sequences if p.root.name == args.sequence or str(p.root.relative_to(root)) == args.sequence
         ]
     if not sequences:
-        raise ValueError(
-            "No original DSEC forward-flow sequence found. Need events.h5, rectify_map.h5, "
-            "16-bit forward-flow PNGs including their validity channel, and two-column timestamps. "
-            "See inventory in this report. Converted HDF5 data needs a verified adapter and its original "
-            "validity masks; zero motion cannot be used to infer invalid pixels."
+        reason = (
+            "No complete DSEC forward-flow layout matched. Need events.h5, rectify_map.h5, "
+            "16-bit forward-flow PNGs and two-column timestamps in the same sequence. "
+            "See sequence_discovery for PNG/timestamp locations and inventory for HDF5 schemas. "
+            "An unmatched layout alone does not establish missing GT or validity masks."
         )
+        if any(item.get("converted_events_schema") for item in report["inventory"]["hdf5_files"]):
+            reason += " Converted HDF5 data also needs a verified adapter and its original validity masks."
+        raise ValueError(reason)
     if args.device != "none":
         from fetch_sources import ensure_sources
 
         ensure_sources(download=False)
     with DsecSequence(sequences[0]) as seq:
-        report.update(sequence=str(seq.paths.root), total_gt_windows=len(seq), event_time_offset_us=seq.offset)
+        report.update(
+            sequence=str(seq.paths.root),
+            selected_paths={
+                name: str(getattr(seq.paths, name)) for name in ("events", "rectify", "flow", "timestamps")
+            },
+            total_gt_windows=len(seq),
+            event_time_offset_us=seq.offset,
+        )
         if (seq.height, seq.width) != (480, 640):
             raise ValueError("Original DSEC must have 480x640 resolution; resized data requires an explicit adapter")
         indices = np.linspace(0, len(seq) - 1, min(args.samples, len(seq)), dtype=int)

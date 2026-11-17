@@ -136,6 +136,44 @@ class DsecTests(unittest.TestCase):
         self.assertTrue(item["converted_events_schema"])
         self.assertEqual(len(discover_sequences(self.root)), 1)
 
+    def test_flat_events_directory_keeps_sequence_root(self):
+        # Regression for the reported Izar layout: <sequence>/events/events.h5.
+        for path in (self.seq / "events/left").iterdir():
+            path.rename(self.seq / "events" / path.name)
+        (self.seq / "events/left").rmdir()
+        paths = self.paths()
+        self.assertEqual(paths.root, self.seq)
+        self.assertEqual(paths.events, self.seq / "events/events.h5")
+        with DsecSequence(paths) as sequence:
+            self.assertEqual(sequence[0]["start_us"], self.offset + 1000)
+            self.assertEqual(sequence[0]["valid"].sum(), 2)
+
+    def test_flat_flow_pngs_and_sequence_timestamp_file(self):
+        for path in (self.seq / "flow/forward").iterdir():
+            path.rename(self.seq / "flow" / path.name)
+        (self.seq / "flow/forward").rmdir()
+        (self.seq / "flow/forward_timestamps.txt").rename(self.seq / "flow_timestamps.txt")
+        with DsecSequence(self.paths()) as sequence:
+            self.assertEqual(Path(sequence[1]["flow_file"]).name, "000100.png")
+            np.testing.assert_equal(sequence[0]["flow"][1, 2], [2.5, -0.5])
+        # A generic flow directory must still reject backward time intervals.
+        timestamp_path = self.seq / "flow_timestamps.txt"
+        timestamps = np.loadtxt(timestamp_path, delimiter=",", dtype=np.int64)
+        np.savetxt(timestamp_path, timestamps[:, ::-1], delimiter=",", fmt="%d")
+        with self.assertRaisesRegex(ValueError, "Forward flow intervals"):
+            DsecSequence(self.paths())
+
+    def test_unmatched_layout_reports_locations_without_selecting_backward_flow(self):
+        (self.seq / "flow/forward").rename(self.seq / "flow/backward")
+        (self.seq / "flow/forward_timestamps.txt").rename(self.seq / "flow/backward_timestamps.txt")
+        diagnostics = []
+        self.assertEqual(discover_sequences(self.root, diagnostics), [])
+        self.assertEqual(len(diagnostics), 1)
+        self.assertFalse(diagnostics[0]["matched"])
+        layout = {entry["directory"]: entry for entry in diagnostics[0]["layout"]}
+        self.assertEqual(layout["flow/backward"]["file_count"], 3)
+        self.assertIn("backward_timestamps.txt", layout["flow"]["timestamp_files"])
+
 
 if __name__ == "__main__":
     unittest.main()

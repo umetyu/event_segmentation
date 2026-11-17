@@ -135,11 +135,15 @@ bash benchmarks/flow_comparison/cluster/submit_dsec_preflight.sh \
   flow/forward_timestamps.txt
 ```
 
-`events_left/`またはシーケンス直下の`events.h5`と、
-`optical_flow_forward/`または`optical_flow_forward_event/`に分けた配置も対応します。
+`events/events.h5`、`events_left/events.h5`またはシーケンス直下の`events.h5`と、
+`optical_flow_forward/`、`optical_flow_forward_event/`または`flow/`直下のPNGに分けた配置も対応します。
 時刻ファイルは`flow/forward_timestamps.txt`、フローPNGディレクトリ内の`timestamps.txt`、
-またはシーケンス直下の`[<sequence>_]optical_flow_forward_timestamps.txt`を認識します。
+またはシーケンス直下の`[<sequence>_]optical_flow_forward_timestamps.txt`、
+`flow_timestamps.txt`、`forward_timestamps.txt`を認識します。
+`flow/`直下のPNGを使う場合も、前向きの時刻区間・PNG/時刻行数・GT形式を検証します。
 PNG数と時刻行数の不一致、GTの欠損、未知の変換済み形式では評価せず停止します。
+配置が見つからない場合は`sequence_discovery`にPNGや時刻ファイルの場所を記録します。
+配置の不一致だけを理由に、GTや有効マスクが欠けているとは判定しません。
 
 既存の`data/dsec_to_h5.py`と`data/h5_packager.py`による変換では、
 GTの無効画素がゼロに置き換わり、元の有効マスクが保存されません。
